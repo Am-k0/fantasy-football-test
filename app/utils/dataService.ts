@@ -1,11 +1,9 @@
-// utils/dataService.ts
-
-export const fetchData = async () => {
+export async function fetchData() {
   try {
-    const data = await import('~/data/data.json');
-    return data.default;
+    const response = await $fetch("/data.json");
+    return response || [];
   } catch (error) {
-    console.error('Failed to fetch data:', error);
-    return null;
+    console.error("Error fetching data:", error);
+    return [];
   }
-};
+}
