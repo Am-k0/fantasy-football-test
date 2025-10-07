@@ -15,7 +15,7 @@
 
       <div class="space-y-4">
         <div v-if="tournamentOptions.length > 0">
-          <div class="w-1/4">
+          <div class="w-full md:w-1/3 lg:w-1/4">
             <select
               v-model="selectedTournamentId"
               class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
@@ -41,10 +41,19 @@
           v-if="selectedTournamentDetails"
           class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
         >
-          <h4 class="font-semibold text-lg mb-2">
-            {{ selectedTournamentDetails.label }}
-          </h4>
-          <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <span class="font-medium text-gray-500 dark:text-gray-400">
+                Operator:
+              </span>
+              {{ selectedTournamentDetails.operator }}
+            </div>
+            <div>
+              <span class="font-medium text-gray-500 dark:text-gray-400">
+                Game Type:
+              </span>
+              {{ selectedTournamentDetails.operatorGameType }}
+            </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Week:
@@ -94,7 +103,6 @@ const tournamentOptions = computed(() => {
   if (!Array.isArray(props.data) || props.data.length === 0) {
     return [];
   }
-
   return props.data.map((tournament) => ({
     label: `Tournament ${tournament.slateId}`,
     value: tournament.slateId,
@@ -102,6 +110,8 @@ const tournamentOptions = computed(() => {
     games: tournament.dfsSlateGames?.length || 0,
     players: tournament.dfsSlatePlayers?.length || 0,
     salaryCap: tournament.salaryCap || 50000,
+    operator: tournament.operator || "N/A",
+    operatorGameType: tournament.operatorGameType || "N/A",
   }));
 });
 
@@ -131,9 +141,7 @@ watch(
   () => props.data,
   (newData) => {
     const currentId = selectedTournamentId.value;
-    const isStillValid = newData.some((t) => t.slateId === currentId);
-
-    if (!isStillValid && currentId !== null) {
+    if (currentId && !newData.some((t) => t.slateId === currentId)) {
       selectedTournamentId.value = null;
       emit("tournament-selected", null);
     }
