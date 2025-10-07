@@ -21,7 +21,7 @@
         </h1>
       </div>
 
-      <MatchesMatchFilters
+      <MatchFilters
         :filters="filters"
         :matches="matches"
         :is-any-filter-active="isAnyFilterActive"
@@ -29,7 +29,7 @@
       />
 
       <div v-if="filteredMatches.length > 0" class="mt-6">
-        <MatchesMatchList
+        <MatchList
           :matches="filteredMatches"
           :is-filtered="isAnyFilterActive"
         />
