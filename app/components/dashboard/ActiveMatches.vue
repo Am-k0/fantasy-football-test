@@ -1,8 +1,6 @@
 <template>
   <div class="space-y-6">
-    <h2 class="text-2xl font-bold">
-      {{ selectedTournamentId ? "Tournament Matches" : "Upcoming Matches" }}
-    </h2>
+    <h2 class="text-2xl font-bold">Upcoming Matches</h2>
 
     <div v-if="pending" class="text-center text-gray-500">
       Loading matches...
@@ -14,11 +12,7 @@
       v-else-if="displayedGames.length === 0"
       class="text-center text-gray-500"
     >
-      {{
-        selectedTournamentId
-          ? "No matches available for this tournament."
-          : "No upcoming matches available."
-      }}
+      No upcoming matches available.
     </div>
     <div v-else>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -85,28 +79,15 @@
 <script setup>
 const emit = defineEmits(["game-selected"]);
 
-const props = defineProps({
-  data: {
-    type: Array,
-    default: () => [],
-  },
-  selectedTournamentId: {
-    type: [String, Number, null],
-    default: null,
-  },
-});
-
 const { data: jsonData, pending, error } = await useFetch("/data.json");
-const currentTournamentId = ref(props.selectedTournamentId);
 
 const allGamesRaw = computed(() => {
   if (!jsonData.value) return [];
 
   const games = [];
-
   jsonData.value.forEach((slate) => {
     if (slate.dfsSlateGames) {
-      slate.dfsSlateGames.forEach((slateGame, _gameIndex) => {
+      slate.dfsSlateGames.forEach((slateGame) => {
         const g = slateGame.game;
         if (g) {
           games.push({
@@ -137,46 +118,13 @@ const allGamesUnique = computed(() => {
   );
 });
 
-const tournamentGames = computed(() => {
-  if (!currentTournamentId.value) return [];
-
-  const filtered = allGamesRaw.value.filter(
-    (game) => String(game.slateId) === String(currentTournamentId.value)
-  );
-
-  return filtered.filter((g, index, self) => {
-    const key = `${g.globalGameId}-${g.slateId}`;
-    const firstIndex = self.findIndex(
-      (x) => `${x.globalGameId}-${x.slateId}` === key
-    );
-    return index === firstIndex;
-  });
-});
-
 const displayedGames = computed(() => {
-  if (currentTournamentId.value) {
-    return tournamentGames.value.slice(0, 6);
-  } else {
-    return allGamesUnique.value.slice(0, 6);
-  }
+  return allGamesUnique.value.slice(0, 6);
 });
 
 const hasMoreGames = computed(() => {
-  if (currentTournamentId.value) {
-    return tournamentGames.value.length > 6;
-  } else {
-    return allGamesUnique.value.length > 6;
-  }
+  return allGamesUnique.value.length > 6;
 });
-
-watch(
-  () => props.selectedTournamentId,
-  async (newId) => {
-    await nextTick();
-    currentTournamentId.value = newId;
-  },
-  { immediate: true }
-);
 
 const formatDate = (isoString) => {
   if (!isoString) return "N/A";

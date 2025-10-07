@@ -26,12 +26,12 @@
     </div>
 
     <div v-else-if="tournaments && tournaments.length > 0" class="space-y-12">
-      <DashboardStatsCard :data="tournaments" />
-      <DashboardActiveTournaments
+      <StatsCard :data="tournaments" />
+      <ActiveTournaments
         :data="tournaments"
         @tournament-selected="handleTournamentSelection"
       />
-      <DashboardActiveMatches
+      <ActiveMatches
         :data="tournaments"
         :selected-tournament-id="selectedTournamentId"
         @game-selected="handleGameSelection"
