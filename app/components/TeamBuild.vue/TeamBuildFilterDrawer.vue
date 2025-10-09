@@ -71,7 +71,7 @@
               @update:model-value="$emit('update:maxSalary', Number($event))"
             />
             <p class="text-xs text-gray-500 mt-1">
-              Remaining budget: ${{ remainingBudget.toLocaleString() }}
+              Remaining budget: ${{ formatSalaryNumber(remainingBudget) }}
             </p>
           </div>
         </div>
@@ -96,6 +96,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { formatSalaryNumber } from "~/utils/helpers";
 
 const props = defineProps<{
   open: boolean;

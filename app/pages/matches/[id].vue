@@ -53,7 +53,7 @@
                   <p class="flex items-center">
                     <UIcon name="i-lucide-calendar" class="size-5 mr-2" />
                     <span class="font-medium">Date: </span>
-                    {{ formatDate(matchData.dateTime) }}
+                    {{ formatDateFull(matchData.dateTime) }}
                   </p>
                   <p class="flex items-center">
                     <UIcon name="i-lucide-map-pin" class="size-5 mr-2" />
@@ -121,19 +121,19 @@
                     </h4>
                     <p>
                       <span class="font-medium">Name:</span>
-                      {{ matchData.stadium?.name }}
+                      {{ matchData.stadium.name }}
                     </p>
                     <p>
                       <span class="font-medium">City:</span>
-                      {{ matchData.stadium?.city }}
+                      {{ matchData.stadium.city }}
                     </p>
                     <p>
                       <span class="font-medium">Capacity:</span>
-                      {{ formatNumber(matchData.stadium?.capacity) }}
+                      {{ formatNumber(matchData.stadium.capacity || 0) }}
                     </p>
                     <p>
                       <span class="font-medium">Type:</span>
-                      {{ matchData.stadium?.type }}
+                      {{ matchData.stadium.type }}
                     </p>
                   </div>
 
@@ -145,15 +145,15 @@
                     </h4>
                     <p>
                       <span class="font-medium">Geo Lat:</span>
-                      {{ matchData.stadium?.geoLat }}
+                      {{ matchData.stadium.geoLat }}
                     </p>
                     <p>
                       <span class="font-medium">Geo Long:</span>
-                      {{ matchData.stadium?.geoLong }}
+                      {{ matchData.stadium.geoLong }}
                     </p>
                     <p>
                       <span class="font-medium">Surface:</span>
-                      {{ matchData.stadium?.playingSurface }}
+                      {{ matchData.stadium.playingSurface }}
                     </p>
                   </div>
 
@@ -196,7 +196,7 @@
                     {{ matchData.awayTeam }}
                   </h4>
                   <div class="text-3xl font-extrabold">
-                    {{ matchData.odds?.awayWin }}
+                    {{ matchData.odds.awayWin }}
                   </div>
                   <p class="text-xs mt-1">Away Win</p>
                 </div>
@@ -205,7 +205,7 @@
                     {{ matchData.homeTeam }}
                   </h4>
                   <div class="text-3xl font-extrabold">
-                    {{ matchData.odds?.homeWin }}
+                    {{ matchData.odds.homeWin }}
                   </div>
                   <p class="text-xs mt-1">Home Win</p>
                 </div>
@@ -224,13 +224,13 @@
                 <div class="rounded-lg p-6 text-center">
                   <h4 class="font-semibold mb-2">Point Spread</h4>
                   <div class="text-2xl font-bold">
-                    {{ matchData.odds?.pointSpread }}
+                    {{ matchData.odds.pointSpread }}
                   </div>
                 </div>
                 <div class="rounded-lg p-6 text-center">
                   <h4 class="font-semibold mb-2">Over/Under</h4>
                   <div class="text-2xl font-bold">
-                    {{ matchData.odds?.overUnder }}
+                    {{ matchData.odds.overUnder }}
                   </div>
                 </div>
               </div>
@@ -243,10 +243,17 @@
 </template>
 
 <script setup lang="ts">
+import {
+  formatDateFull,
+  formatNumber,
+  getStadiumImage,
+  findMatchById,
+} from "~/utils/helpers";
+
 interface Stadium {
   name: string;
   city: string;
-  capacity: string;
+  capacity: number;
   type: string;
   geoLat: string;
   geoLong: string;
@@ -282,82 +289,15 @@ interface MatchData {
   odds: Odds;
 }
 
-interface SlateGame {
-  slateGameId: number;
-  gameId: number;
-  operatorGameId: number;
-  game: {
-    gameKey: string;
-    season: number;
-    week: number;
-    awayTeam: string;
-    homeTeam: string;
-    dateTime: string;
-    channel?: string;
-    pointSpread?: string;
-    overUnder?: string;
-    homeTeamMoneyLine?: string;
-    awayTeamMoneyLine?: string;
-    stadiumDetails?: Stadium;
-    forecastDescription?: string;
-    forecastTempLow?: number;
-    forecastWindSpeed?: number;
-    status?: string;
-  };
-}
-
-interface Slate {
-  dfsSlateGames: SlateGame[];
-}
-
 const route = useRoute();
-const { id } = route.params;
-const { data: jsonData } = await useFetch<Slate[]>("/data.json");
+const id = route.params.id as string | string[];
+const matchId: string = (Array.isArray(id) ? id[0] : id) || "";
+
+const { data: jsonData } = await useFetch<MatchData[]>("/data.json");
 
 const matchData = computed((): MatchData | null => {
   if (!jsonData.value) return null;
-
-  let foundMatch: MatchData | null = null;
-  jsonData.value.forEach((slate) => {
-    slate.dfsSlateGames.forEach((slateGame) => {
-      if (String(slateGame.slateGameId) === String(id)) {
-        const g = slateGame.game;
-        foundMatch = {
-          id: slateGame.slateGameId,
-          gameKey: g.gameKey,
-          awayTeam: g.awayTeam,
-          homeTeam: g.homeTeam,
-          dateTime: g.dateTime,
-          stadiumName: g.stadiumDetails?.name || "N/A",
-          stadium: {
-            name: g.stadiumDetails?.name || "N/A",
-            city: g.stadiumDetails?.city || "N/A",
-            capacity: g.stadiumDetails?.capacity || "N/A",
-            type: g.stadiumDetails?.type || "N/A",
-            geoLat: g.stadiumDetails?.geoLat || "N/A",
-            geoLong: g.stadiumDetails?.geoLong || "N/A",
-            playingSurface: g.stadiumDetails?.playingSurface || "Artificial",
-          },
-          weather: {
-            description: g.forecastDescription || "Clear Sky",
-            temperature: g.forecastTempLow || 87,
-            windSpeed: g.forecastWindSpeed || 5,
-          },
-          tvChannel: g.channel || null,
-          odds: {
-            homeWin: g.homeTeamMoneyLine || "-179",
-            awayWin: g.awayTeamMoneyLine || "147",
-            pointSpread: g.pointSpread || "-3.5",
-            overUnder: g.overUnder || "48.5",
-          },
-          week: g.week,
-          season: g.season || "N/A",
-          status: g.status || "Scheduled",
-        };
-      }
-    });
-  });
-  return foundMatch;
+  return findMatchById(jsonData.value, matchId) as MatchData | null;
 });
 
 const tabItems = [
@@ -365,44 +305,4 @@ const tabItems = [
   { label: "Stadium", icon: "i-lucide-soccer-pitch", slot: "stadium" },
   { label: "Odds", icon: "i-heroicons-calculator", slot: "odds" },
 ];
-
-const formatDate = (dateString: string): string => {
-  if (!dateString) return "TBA";
-  try {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "Invalid Date";
-  }
-};
-
-const formatNumber = (value: string | number): string => {
-  if (typeof value === "string" && !isNaN(Number(value))) {
-    return Number(value).toLocaleString();
-  }
-  if (typeof value === "number") {
-    return value.toLocaleString();
-  }
-  return value.toString();
-};
-
-const getStadiumImage = (stadiumType: string): string => {
-  const type = stadiumType?.toLowerCase();
-  switch (type) {
-    case "dome":
-      return "/images/stadionDome.jpg";
-    case "outdoor":
-      return "/images/stadionOutdoor.jpg";
-    case "retractabledome":
-      return "/images/stadion3.jpg";
-    default:
-      return "/images/stadionOutdoor.jpg";
-  }
-};
 </script>

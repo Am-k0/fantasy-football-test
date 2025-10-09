@@ -183,7 +183,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import {
+  extractTournamentIds,
+  extractTeams,
+  extractChannels,
+  extractStadiumTypes,
+} from "~/utils/helpers";
 
 const props = defineProps({
   filters: {
@@ -216,48 +221,10 @@ const localFilters = ref({
   slateId: props.filters.slateId || "",
 });
 
-const tournamentOptions = computed(() => {
-  if (!props.matches || props.matches.length === 0) return [];
-
-  const slateIds = new Set();
-  props.matches.forEach((game) => {
-    if (game.slateId && game.slateId !== "Unknown") {
-      slateIds.add(game.slateId);
-    }
-  });
-
-  return Array.from(slateIds).sort((a, b) =>
-    String(a).localeCompare(String(b), undefined, { numeric: true })
-  );
-});
-
-const teamOptions = computed(() => {
-  if (!props.matches || props.matches.length === 0) return [];
-  const teams = new Set();
-  props.matches.forEach((game) => {
-    if (game.homeTeam) teams.add(game.homeTeam);
-    if (game.awayTeam) teams.add(game.awayTeam);
-  });
-  return Array.from(teams).sort();
-});
-
-const channelOptions = computed(() => {
-  if (!props.matches || props.matches.length === 0) return [];
-  const channels = new Set();
-  props.matches.forEach((game) => {
-    if (game.channel && game.channel !== "N/A") channels.add(game.channel);
-  });
-  return Array.from(channels).sort();
-});
-
-const stadiumTypeOptions = computed(() => {
-  if (!props.matches || props.matches.length === 0) return [];
-  const types = new Set();
-  props.matches.forEach((game) => {
-    if (game.stadiumDetails?.type) types.add(game.stadiumDetails.type);
-  });
-  return Array.from(types).sort();
-});
+const tournamentOptions = computed(() => extractTournamentIds(props.matches));
+const teamOptions = computed(() => extractTeams(props.matches));
+const channelOptions = computed(() => extractChannels(props.matches));
+const stadiumTypeOptions = computed(() => extractStadiumTypes(props.matches));
 
 const emitFilters = () => {
   emit("update-filters", { ...localFilters.value });

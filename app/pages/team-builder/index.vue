@@ -57,8 +57,11 @@
 
     <!-- Team builder - prikazuje se samo ako je korisnik ulogovan -->
     <div v-else>
-      <div v-if="loadingTeam" class="text-center py-8">
-        <p class="text-gray-500">Loading your team...</p>
+      <!-- Loading State -->
+      <div v-if="loadingTeam" class="flex justify-center items-center h-64">
+        <UButton loading size="lg" color="primary" variant="ghost">
+          Loading your team...
+        </UButton>
       </div>
 
       <div v-else class="flex gap-6 justify-center">
@@ -111,11 +114,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useSupabaseAuth } from "~/composables/useSupabaseAuth";
 import { useTeam } from "~/composables/useTeam";
 import type { Player, Slot } from "~/types/team";
+import {
+  extractPlayersFromTournaments,
+  filterValidPositions,
+  calculateCurrentBudget,
+  calculateRemainingBudget,
+  calculateTotalFantasyPoints,
+  isTeamComplete as checkTeamComplete,
+} from "~/utils/helpers";
 
 definePageMeta({
   layout: "default",
@@ -273,73 +283,25 @@ const rosterSlots = ref<Slot[]>([
 ]);
 const activeSlot = ref<Slot | null>(null);
 
-const currentBudget = computed(() => {
-  return rosterSlots.value.reduce(
-    (sum, slot) => sum + (slot.player?.salary ?? 0),
-    0
-  );
-});
-
-const remainingBudget = computed(() => TOTAL_BUDGET - currentBudget.value);
-
-const totalFantasyPoints = computed(() => {
-  return rosterSlots.value.reduce(
-    (sum, slot) => sum + (slot.player?.fantasyPoints ?? 0),
-    0
-  );
-});
-
-const isTeamComplete = computed(() => {
-  const allSlotsFilled = rosterSlots.value.every(
-    (slot) => slot.player !== null
-  );
-  const withinBudget = remainingBudget.value >= 0;
-  return allSlotsFilled && withinBudget;
-});
-
-interface DfsSlatePlayer {
-  playerId: number;
-  operatorPlayerName: string;
-  operatorPosition: string;
-  team: string | null;
-  fantasyPoints?: number;
-  operatorSalary?: number;
-}
-
-interface Slate {
-  dfsSlatePlayers: DfsSlatePlayer[];
-}
+const currentBudget = computed(() => calculateCurrentBudget(rosterSlots.value));
+const remainingBudget = computed(() =>
+  calculateRemainingBudget(TOTAL_BUDGET, currentBudget.value)
+);
+const totalFantasyPoints = computed(() =>
+  calculateTotalFantasyPoints(rosterSlots.value)
+);
+const isTeamComplete = computed(() =>
+  checkTeamComplete(rosterSlots.value, remainingBudget.value)
+);
 
 const fetchPlayersData = async (): Promise<Player[]> => {
   try {
     const res = await fetch("/data.json");
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const json: Slate[] = await res.json();
+    const json = await res.json();
 
-    const players = json.flatMap((slate) =>
-      slate.dfsSlatePlayers.map((p) => ({
-        id: p.playerId,
-        name: p.operatorPlayerName,
-        position: p.operatorPosition === "DST" ? "DEF" : p.operatorPosition,
-        team: p.team || null,
-        avatar: "/images/player.png",
-        fantasyPoints: p.fantasyPoints ?? 0,
-        salary: p.operatorSalary ?? 0,
-      }))
-    );
-
-    const uniquePlayersMap = new Map<number, Player>();
-    players.forEach((player: Player) => {
-      if (!player.position) return;
-      if (
-        ["QB", "RB", "WR", "TE", "DEF", "K"].includes(player.position) &&
-        !uniquePlayersMap.has(player.id)
-      ) {
-        uniquePlayersMap.set(player.id, player);
-      }
-    });
-
-    return Array.from(uniquePlayersMap.values());
+    const players = extractPlayersFromTournaments(json);
+    return filterValidPositions(players);
   } catch (e) {
     console.error("Failed to fetch player data:", e);
     return [];

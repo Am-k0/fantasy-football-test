@@ -18,9 +18,9 @@
             <span
               :class="remainingBudget < 0 ? 'text-red-400' : 'text-green-400'"
             >
-              ${{ remainingBudget.toLocaleString() }}
+              ${{ formatSalaryNumber(remainingBudget) }}
             </span>
-            / ${{ totalBudget.toLocaleString() }}
+            / ${{ formatSalaryNumber(totalBudget) }}
           </span>
         </div>
 
@@ -29,7 +29,7 @@
           <span>
             Total Fantasy Points:
             <span class="text-purple-400">{{
-              Math.round(totalFantasyPoints)
+              roundFantasyPoints(totalFantasyPoints)
             }}</span>
           </span>
         </div>
@@ -95,7 +95,7 @@
                   v-if="!teamSaved || isEditing"
                   class="text-[10px] text-green-600 font-bold mt-0.5"
                 >
-                  ${{ slot.player.salary.toLocaleString() }}
+                  ${{ formatSalaryNumber(slot.player.salary) }}
                 </p>
               </div>
 
@@ -180,6 +180,7 @@
 
 <script setup lang="ts">
 import type { Slot } from "~/types/team";
+import { formatSalaryNumber, roundFantasyPoints } from "~/utils/helpers";
 
 defineProps<{
   rosterSlots: Slot[];

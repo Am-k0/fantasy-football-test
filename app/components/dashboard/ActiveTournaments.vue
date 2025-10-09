@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { formatSalary } from "~/utils/helpers";
 
 const props = defineProps({
   data: {
@@ -122,16 +122,6 @@ const selectedTournamentDetails = computed(() => {
     ) || null
   );
 });
-
-const formatSalary = (salary) => {
-  if (typeof salary !== "number") return "N/A";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(salary);
-};
 
 const onTournamentChange = () => {
   emit("tournament-selected", selectedTournamentId.value);
