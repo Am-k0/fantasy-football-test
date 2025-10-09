@@ -234,25 +234,18 @@ import {
 } from "@tanstack/vue-table";
 import type { TableColumn } from "@nuxt/ui";
 import { NuxtLink } from "#components";
-import { ref, h, onMounted, computed, type VNode } from "vue";
+import { h } from "vue";
+import {
+  extractPlayersFromTournaments,
+  extractTeams,
+  extractPositions,
+  roundFantasyPoints,
+} from "~/utils/helpers";
 
 const UAvatar = resolveComponent("UAvatar");
 const UIcon = resolveComponent("UIcon");
 const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
-
-// Data types from API
-interface DfsSlatePlayer {
-  playerId: number;
-  operatorPlayerName: string;
-  operatorPosition: string;
-  team: string | null;
-  fantasyPoints?: number;
-}
-
-interface Slate {
-  dfsSlatePlayers: DfsSlatePlayer[];
-}
 
 interface TableRef {
   tableApi?: {
@@ -306,7 +299,7 @@ const paginationOptions = {
   getSortedRowModel: getSortedRowModel(),
 };
 
-function getHeader(column: Column<Player>, label: string): VNode {
+function getHeader(column: Column<Player>, label: string) {
   const isSorted = column.getIsSorted();
 
   return h(
@@ -363,15 +356,8 @@ function getHeader(column: Column<Player>, label: string): VNode {
   );
 }
 
-const uniqueTeams = computed(() => {
-  return Array.from(
-    new Set(players.value.map((p) => p.team).filter((t): t is string => !!t))
-  );
-});
-
-const uniquePositions = computed(() => {
-  return Array.from(new Set(players.value.map((p) => p.position)));
-});
+const uniqueTeams = computed(() => extractTeams(players.value));
+const uniquePositions = computed(() => extractPositions(players.value));
 
 const hasActiveFilters = computed(() => {
   return (
@@ -470,26 +456,8 @@ onMounted(async () => {
     const res = await fetch("/data.json");
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-    const json: Slate[] = await res.json();
-
-    const allPlayers = json.flatMap((slate) =>
-      slate.dfsSlatePlayers.map((p) => ({
-        id: p.playerId,
-        name: p.operatorPlayerName,
-        position: p.operatorPosition,
-        team: p.team || null,
-        avatar: "/images/player.png",
-        fantasyPoints: p.fantasyPoints ?? 0,
-      }))
-    );
-
-    const uniquePlayersMap = new Map<number, Player>();
-    allPlayers.forEach((player: Player) => {
-      if (!uniquePlayersMap.has(player.id))
-        uniquePlayersMap.set(player.id, player);
-    });
-
-    players.value = Array.from(uniquePlayersMap.values());
+    const json = await res.json();
+    players.value = extractPlayersFromTournaments(json);
     status.value = "done";
   } catch (e) {
     console.error("Failed to fetch player data:", e);
@@ -557,7 +525,7 @@ const columns: TableColumn<Player>[] = [
       h(
         "span",
         { class: "font-semibold text-purple-600 dark:text-purple-400" },
-        (row.original.fantasyPoints ?? 0).toString()
+        roundFantasyPoints(row.original.fantasyPoints ?? 0).toString()
       ),
   },
 ];

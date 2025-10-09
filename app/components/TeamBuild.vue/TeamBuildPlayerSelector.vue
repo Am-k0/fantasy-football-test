@@ -73,28 +73,28 @@
 
           <template #salary-cell="{ row }">
             <span class="font-semibold text-green-600 dark:text-green-400">
-              ${{ row.original.salary.toLocaleString() }}
+              ${{ formatSalaryNumber(row.original.salary) }}
             </span>
           </template>
 
           <template #fantasyPoints-cell="{ row }">
             <span class="font-semibold text-purple-600">
-              {{ Math.round(row.original.fantasyPoints) }}
+              {{ roundFantasyPoints(row.original.fantasyPoints) }}
             </span>
           </template>
 
           <template #action-cell="{ row }">
             <UButton
-              :disabled="!canSelectPlayer(row.original)"
+              :disabled="!canSelectPlayerCheck(row.original)"
               :class="
-                canSelectPlayer(row.original)
+                canSelectPlayerCheck(row.original)
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               "
               size="sm"
               @click="handleAssignPlayer(row.original)"
             >
-              {{ getSelectButtonText(row.original) }}
+              {{ getButtonText(row.original) }}
             </UButton>
           </template>
         </UTable>
@@ -152,6 +152,14 @@ import {
 } from "@tanstack/vue-table";
 import type { TableColumn } from "@nuxt/ui";
 import type { Player, Slot } from "~/types/team";
+import {
+  extractTeams,
+  filterPlayersByPosition,
+  canSelectPlayer,
+  getSelectButtonText,
+  formatSalaryNumber,
+  roundFantasyPoints,
+} from "~/utils/helpers";
 
 const props = defineProps<{
   activeSlot: Slot;
@@ -191,17 +199,12 @@ const paginationOptions = {
 };
 
 const availableTeams = computed(() => {
-  const positionPlayers = props.allPlayers.filter((p) => {
-    if (props.activeSlot.type === "FLEX") {
-      return ["RB", "WR", "TE"].includes(p.position);
-    }
-    return p.position === props.activeSlot.type;
-  });
-
-  const teams = positionPlayers
-    .map((p) => p.team)
-    .filter((team): team is string => team !== null);
-  return Array.from(new Set(teams)).sort();
+  const positionPlayers = filterPlayersByPosition(
+    props.allPlayers,
+    props.activeSlot.type,
+    []
+  );
+  return extractTeams(positionPlayers);
 });
 
 watch(
@@ -247,54 +250,37 @@ const clearAllFilters = () => {
   maxSalaryFilter.value = 0;
 };
 
-const countPlayersFromTeam = (teamName: string | null): number => {
-  if (!teamName) return 0;
-  return props.rosterSlots.filter(
-    (slot) =>
-      slot.player &&
-      slot.player.team === teamName &&
-      slot.id !== props.activeSlot.id
-  ).length;
+const canSelectPlayerCheck = (player: Player): boolean => {
+  return canSelectPlayer(
+    player,
+    props.rosterSlots,
+    props.remainingBudget,
+    props.activeSlot.id
+  );
 };
 
-const canAffordPlayer = (player: Player): boolean => {
-  const playerSalary = player.salary;
-  const currentSlotSalary = props.activeSlot.player?.salary ?? 0;
-  return props.remainingBudget + currentSlotSalary >= playerSalary;
-};
-
-const canSelectPlayer = (player: Player): boolean => {
-  if (!player.team) return canAffordPlayer(player);
-  const withinTeamLimit = countPlayersFromTeam(player.team) < 2;
-  const withinBudget = canAffordPlayer(player);
-  return withinTeamLimit && withinBudget;
-};
-
-const getSelectButtonText = (player: Player): string => {
-  if (!canAffordPlayer(player)) return "Over Budget";
-  if (!canSelectPlayer(player)) return "Team Limit";
-  return "Select";
+const getButtonText = (player: Player): string => {
+  return getSelectButtonText(
+    player,
+    props.rosterSlots,
+    props.remainingBudget,
+    props.activeSlot.id
+  );
 };
 
 const filteredPlayers = computed(() => {
-  let players = props.allPlayers.filter((p) => {
-    let matchesPosition = false;
-    if (props.activeSlot.type === "FLEX") {
-      matchesPosition = ["RB", "WR", "TE"].includes(p.position);
-    } else {
-      matchesPosition = p.position === props.activeSlot.type;
-    }
+  const assignedIds = props.rosterSlots
+    .filter(
+      (s): s is Slot & { player: Player } =>
+        s.player !== null && s.id !== props.activeSlot.id
+    )
+    .map((s) => s.player.id);
 
-    const assignedIds = props.rosterSlots
-      .filter(
-        (s): s is Slot & { player: Player } =>
-          s.player !== null && s.id !== props.activeSlot.id
-      )
-      .map((s) => s.player.id);
-
-    const notAssigned = !assignedIds.includes(p.id);
-    return matchesPosition && notAssigned;
-  });
+  let players = filterPlayersByPosition(
+    props.allPlayers,
+    props.activeSlot.type,
+    assignedIds
+  );
 
   if (selectedTeam.value !== "") {
     players = players.filter((p) => p.team === selectedTeam.value);
@@ -357,7 +343,7 @@ const handlePageChange = (page: number): void => {
 };
 
 const handleAssignPlayer = (player: Player) => {
-  if (!canSelectPlayer(player)) {
+  if (!canSelectPlayerCheck(player)) {
     showTeamLimitWarning.value = true;
     emit("teamLimitWarning", true);
     return;

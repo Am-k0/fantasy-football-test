@@ -77,45 +77,25 @@
 </template>
 
 <script setup>
+import {
+  formatDate,
+  formatWeek,
+  extractGamesFromTournaments,
+  getUniqueGames,
+  sortGamesByDate,
+} from "~/utils/helpers";
+
 const emit = defineEmits(["game-selected"]);
 
 const { data: jsonData, pending, error } = await useFetch("/data.json");
 
 const allGamesRaw = computed(() => {
   if (!jsonData.value) return [];
-
-  const games = [];
-  jsonData.value.forEach((slate) => {
-    if (slate.dfsSlateGames) {
-      slate.dfsSlateGames.forEach((slateGame) => {
-        const g = slateGame.game;
-        if (g) {
-          games.push({
-            id: slateGame.slateGameId,
-            globalGameId: g.globalGameId,
-            gameKey: g.gameKey,
-            awayTeam: g.awayTeam,
-            homeTeam: g.homeTeam,
-            dateTime: g.dateTime,
-            stadiumName: g.stadiumDetails?.name || "N/A",
-            weather: g.forecastDescription || "N/A",
-            status: g.status || "N/A",
-            week: g.week,
-            slateId: slate.slateId,
-          });
-        }
-      });
-    }
-  });
-
-  return games.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+  return sortGamesByDate(extractGamesFromTournaments(jsonData.value));
 });
 
 const allGamesUnique = computed(() => {
-  return allGamesRaw.value.filter(
-    (g, index, self) =>
-      index === self.findIndex((x) => x.globalGameId === g.globalGameId)
-  );
+  return getUniqueGames(allGamesRaw.value);
 });
 
 const displayedGames = computed(() => {
@@ -125,20 +105,6 @@ const displayedGames = computed(() => {
 const hasMoreGames = computed(() => {
   return allGamesUnique.value.length > 6;
 });
-
-const formatDate = (isoString) => {
-  if (!isoString) return "N/A";
-  const date = new Date(isoString);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const formatWeek = (week) => `Week ${week}`;
 
 const selectGame = (game) => {
   navigateTo(`/matches/${game.id}`);

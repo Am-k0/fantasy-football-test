@@ -1,18 +1,24 @@
 <template>
   <div class="p-4 sm:p-8 space-y-6">
+    <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="text-lg font-medium text-gray-500 dark:text-gray-400">
+      <UButton loading size="lg" color="primary" variant="ghost">
         Loading matches...
-      </div>
+      </UButton>
     </div>
 
-    <div
-      v-else-if="error"
-      class="text-red-500 bg-red-100 dark:bg-red-900 dark:text-red-300 p-4 rounded-md text-center"
-    >
-      <p><strong>Error loading matches:</strong> {{ error }}</p>
+    <!-- Error State -->
+    <div v-else-if="error">
+      <UAlert
+        icon="i-heroicons-exclamation-triangle"
+        color="red"
+        variant="solid"
+        title="Error loading matches"
+        :description="error"
+      />
     </div>
 
+    <!-- Content -->
     <div v-else class="space-y-6">
       <div class="flex items-center justify-center gap-3 mb-4">
         <UIcon name="i-mdi-football" class="w-7 h-7" />
@@ -34,15 +40,21 @@
           :is-filtered="isAnyFilterActive"
         />
       </div>
-      <div v-else class="text-center text-gray-500 dark:text-gray-400 py-8">
-        No matches found for the selected filters.
+      <div v-else class="text-center py-12">
+        <UAlert
+          icon="i-heroicons-information-circle"
+          color="blue"
+          variant="soft"
+          title="No matches found"
+          description="No matches found for the selected filters."
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { extractGamesFromTournaments } from "~/utils/helpers";
 
 const matches = ref([]);
 const loading = ref(true);
@@ -64,40 +76,7 @@ onMounted(async () => {
     const response = await $fetch("/data.json");
 
     if (response && Array.isArray(response) && response.length > 0) {
-      const allGames = [];
-
-      response.forEach((tournament) => {
-        const tournamentSlateId = tournament.slateId || "Unknown";
-
-        if (
-          tournament.dfsSlateGames &&
-          Array.isArray(tournament.dfsSlateGames)
-        ) {
-          tournament.dfsSlateGames.forEach((slateGame) => {
-            const gameData = slateGame.game;
-
-            if (gameData) {
-              const gameId =
-                slateGame.slateGameId ||
-                `${gameData.homeTeam || "TBA"}-${gameData.awayTeam || "TBA"}-${
-                  gameData.dateTime || Date.now()
-                }`;
-
-              allGames.push({
-                ...gameData,
-                slateId: tournamentSlateId,
-                slateGameId: slateGame.slateGameId,
-                id: gameId,
-                stadiumDetails: gameData.stadiumDetails || {},
-                date: gameData.dateTime,
-                forecastDescription: gameData.forecastDescription || "N/A",
-                channel: gameData.channel || "N/A",
-              });
-            }
-          });
-        }
-      });
-
+      const allGames = extractGamesFromTournaments(response);
       matches.value = allGames.filter((g) => g.date);
 
       if (matches.value.length === 0) {

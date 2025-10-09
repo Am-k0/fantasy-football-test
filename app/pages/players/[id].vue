@@ -61,7 +61,7 @@
           <div class="flex justify-center lg:justify-start">
             <div class="w-64 h-64 relative">
               <img
-                :src="player.avatar"
+                :src="player.avatar || '/images/player.png'"
                 :alt="player.name"
                 class="w-full h-full object-cover rounded-lg shadow-lg border-4 border-gray-200 dark:border-gray-700"
               />
@@ -131,7 +131,7 @@
                   >Salary:</span
                 >
                 <span class="font-bold text-green-600 dark:text-green-400">
-                  ${{ formatSalary(player.salary) }}
+                  ${{ formatSalaryNumber(player.salary || 0) }}
                 </span>
               </p>
             </div>
@@ -165,7 +165,7 @@
               Fantasy Points
             </p>
             <p class="text-4xl font-bold text-purple-600 dark:text-purple-400">
-              {{ player.points || 0 }}
+              {{ roundFantasyPoints(player.points || 0) }}
             </p>
           </div>
 
@@ -183,7 +183,7 @@
               Points per Dollar
             </p>
             <p class="text-4xl font-bold text-blue-600 dark:text-blue-400">
-              {{ formatPointsPerDollar(player.fantasyPointsPerDollar) }}
+              {{ formatPointsPerDollar(player.fantasyPointsPerDollar || 0) }}
             </p>
           </div>
 
@@ -201,7 +201,7 @@
               Projected Ownership
             </p>
             <p class="text-4xl font-bold text-green-600 dark:text-green-400">
-              {{ formatProjectedOwnership(player.projectedOwnership) }}%
+              {{ formatProjectedOwnership(player.projectedOwnership || 0) }}%
             </p>
           </div>
         </div>
@@ -211,26 +211,15 @@
 </template>
 
 <script setup lang="ts">
-// Player data type from JSON
-interface PlayerData {
-  playerId: number;
-  operatorPlayerName: string;
-  operatorPosition: string;
-  team: string | null;
-  fantasyPoints?: number;
-  operatorSalary?: number;
-  fantasyPointsPerDollar?: number;
-  projectedOwnership?: number;
-  operatorRosterSlots?: string[];
-}
+import {
+  formatSalaryNumber,
+  formatPointsPerDollar,
+  formatProjectedOwnership,
+  roundFantasyPoints,
+  findPlayerById,
+} from "~/utils/helpers";
 
-// Slate type from JSON
-interface Slate {
-  dfsSlatePlayers?: PlayerData[];
-}
-
-// Player type for component
-type Player = {
+interface Player {
   id: number;
   name: string;
   position: string;
@@ -241,68 +230,22 @@ type Player = {
   fantasyPointsPerDollar?: number;
   projectedOwnership?: number;
   allPositions?: string[];
-};
+}
 
-// Route and reactive data
 const route = useRoute();
 const playerId = Number(route.params.id);
 
 const status = ref<"idle" | "pending" | "done" | "error">("idle");
 const player = ref<Player | null>(null);
 
-// Format salary
-const formatSalary = (salary: number | undefined): string => {
-  if (!salary) return "0";
-  return salary.toLocaleString();
-};
-
-// Format points per dollar
-const formatPointsPerDollar = (points: number | undefined): string => {
-  if (!points) return "0.000";
-  return points.toFixed(3);
-};
-
-// Format projected ownership
-const formatProjectedOwnership = (value: number | undefined): string => {
-  if (!value) return "0.000";
-  return value.toFixed(3);
-};
-
-// Fetch player data
 const fetchPlayerData = async () => {
   status.value = "pending";
   try {
     const res = await fetch("/data.json");
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-    const json: Slate[] = await res.json();
-
-    let foundPlayer: Player | null = null;
-
-    for (const slate of json) {
-      if (slate.dfsSlatePlayers) {
-        const playerData = slate.dfsSlatePlayers.find(
-          (p: PlayerData) => p.playerId === playerId
-        );
-        if (playerData) {
-          foundPlayer = {
-            id: playerData.playerId,
-            name: playerData.operatorPlayerName,
-            position: playerData.operatorPosition,
-            team: playerData.team || null,
-            avatar: "/images/player.png",
-            points: playerData.fantasyPoints || 0,
-            salary: playerData.operatorSalary || 0,
-            fantasyPointsPerDollar: playerData.fantasyPointsPerDollar || 0,
-            projectedOwnership: playerData.projectedOwnership || 0,
-            allPositions: playerData.operatorRosterSlots || [
-              playerData.operatorPosition,
-            ],
-          };
-          break;
-        }
-      }
-    }
+    const json = await res.json();
+    const foundPlayer = findPlayerById(json, playerId) as Player | null;
 
     if (foundPlayer) {
       player.value = foundPlayer;
@@ -316,7 +259,6 @@ const fetchPlayerData = async () => {
   }
 };
 
-// SEO Meta
 useSeoMeta({
   title: computed(() =>
     player.value
@@ -332,7 +274,6 @@ useSeoMeta({
   ),
 });
 
-// Fetch on mount
 onMounted(() => {
   fetchPlayerData();
 });

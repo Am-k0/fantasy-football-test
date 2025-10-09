@@ -78,6 +78,12 @@
 </template>
 
 <script setup>
+import {
+  formatSalary,
+  calculateTotalGames,
+  calculateAverageSalary,
+} from "~/utils/helpers";
+
 const props = defineProps({
   data: {
     type: Array,
@@ -85,33 +91,6 @@ const props = defineProps({
   },
 });
 
-const totalGames = computed(() => {
-  return props.data.reduce(
-    (sum, slate) => sum + (slate.dfsSlateGames?.length || 0),
-    0
-  );
-});
-
-const averageSalary = computed(() => {
-  let totalSalary = 0;
-  let playerCount = 0;
-  props.data.forEach((slate) => {
-    slate.dfsSlatePlayers?.forEach((player) => {
-      if (player.operatorSalary && player.operatorSalary > 0) {
-        totalSalary += player.operatorSalary;
-        playerCount++;
-      }
-    });
-  });
-  return playerCount > 0 ? totalSalary / playerCount : 0;
-});
-
-const formatSalary = (salary) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(salary);
-};
+const totalGames = computed(() => calculateTotalGames(props.data));
+const averageSalary = computed(() => calculateAverageSalary(props.data));
 </script>

@@ -54,7 +54,7 @@
           v-if="maxSalaryFilter > 0"
           class="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm"
         >
-          <span>Max Salary: ${{ maxSalaryFilter.toLocaleString() }}</span>
+          <span>Max Salary: ${{ formatSalaryNumber(maxSalaryFilter) }}</span>
           <button
             class="ml-1 text-green-600 dark:text-green-300 hover:text-green-800 dark:hover:text-green-100"
             @click="$emit('clearSalary')"
@@ -77,6 +77,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatSalaryNumber } from "~/utils/helpers";
+
 defineProps<{
   showTeamLimitWarning: boolean;
   hasActiveFilters: boolean;

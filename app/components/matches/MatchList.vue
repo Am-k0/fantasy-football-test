@@ -52,7 +52,7 @@
               <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <div class="flex items-center">
                   <UIcon name="i-lucide-calendar" class="mr-2 h-4 w-4" />
-                  <span>{{ formatDateTime(game.date) }}</span>
+                  <span>{{ formatDate(game.date) }}</span>
                 </div>
                 <div class="flex items-center">
                   <UIcon name="i-lucide-map-pin" class="mr-2 h-4 w-4" />
@@ -123,8 +123,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import {
+  formatDate,
+  formatWeek,
+  groupMatchesByTournament,
+} from "~/utils/helpers";
 
 const emit = defineEmits(["game-selected"]);
 
@@ -144,49 +147,8 @@ const router = useRouter();
 const expandedTournaments = ref({});
 const showAllTournaments = ref(false);
 
-const formatDateTime = (dateString) => {
-  if (!dateString) return "TBA";
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "Invalid Date";
-  }
-};
-
-const formatWeek = (week) => {
-  return week ? `Week ${week}` : "Week N/A";
-};
-
 const groupedMatches = computed(() => {
-  if (!props.matches || props.matches.length === 0) {
-    return {};
-  }
-
-  const groups = {};
-  props.matches.forEach((match) => {
-    const slateId = match.slateId || "Unknown";
-
-    if (!groups[slateId]) {
-      groups[slateId] = [];
-    }
-    groups[slateId].push(match);
-  });
-
-  const sortedGroups = Object.keys(groups)
-    .sort((a, b) => a.localeCompare(b))
-    .reduce((result, key) => {
-      result[key] = groups[key];
-      return result;
-    }, {});
-
-  return sortedGroups;
+  return groupMatchesByTournament(props.matches);
 });
 
 const totalTournaments = computed(() => {
