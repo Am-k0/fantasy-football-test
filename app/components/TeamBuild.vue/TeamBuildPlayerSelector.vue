@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[700px]">
+  <div class="w-[720px]">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -15,18 +15,13 @@
               class="w-64"
             />
             <UButton
+              color="gray"
               variant="outline"
               icon="i-heroicons-funnel"
-              class="border-gray-300"
+              :badge="activeFiltersCount > 0 ? activeFiltersCount : undefined"
               @click="drawerOpen = true"
             >
               Filters
-              <span
-                v-if="activeFiltersCount > 0"
-                class="ml-2 px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full"
-              >
-                {{ activeFiltersCount }}
-              </span>
             </UButton>
           </div>
         </div>
@@ -43,6 +38,67 @@
         @clear-salary="clearSalaryFilter"
         @clear-all="clearAllFilters"
       />
+
+      <!-- Active Filters Display -->
+      <div
+        v-if="hasActiveFilters"
+        class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700"
+      >
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Active filters:
+          </span>
+
+          <div
+            v-if="selectedTeam"
+            class="flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+          >
+            <span>Team: {{ selectedTeam }}</span>
+            <button
+              class="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
+              @click="clearTeamFilter"
+            >
+              <UIcon name="i-heroicons-x-mark" class="h-4 w-4" />
+            </button>
+          </div>
+
+          <div
+            v-if="minPointsFilter > 0"
+            class="flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm"
+          >
+            <span>Min Points: {{ minPointsFilter }}+</span>
+            <button
+              class="ml-1 text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100"
+              @click="clearPointsFilter"
+            >
+              <UIcon name="i-heroicons-x-mark" class="h-4 w-4" />
+            </button>
+          </div>
+
+          <div
+            v-if="maxSalaryFilter > 0"
+            class="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm"
+          >
+            <span>Max Salary: ${{ formatSalaryNumber(maxSalaryFilter) }}</span>
+            <button
+              class="ml-1 text-green-600 dark:text-green-300 hover:text-green-800 dark:hover:text-green-100"
+              @click="clearSalaryFilter"
+            >
+              <UIcon name="i-heroicons-x-mark" class="h-4 w-4" />
+            </button>
+          </div>
+
+          <UButton
+            color="gray"
+            variant="ghost"
+            size="sm"
+            class="ml-2"
+            @click="clearAllFilters"
+          >
+            Clear All
+          </UButton>
+        </div>
+      </div>
 
       <div v-if="loading" class="text-center py-8">
         <p class="text-gray-500">Loading players...</p>
@@ -143,11 +199,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, h } from "vue";
 import {
   getPaginationRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  type Column,
   type SortingState,
 } from "@tanstack/vue-table";
 import type { TableColumn } from "@nuxt/ui";
@@ -160,6 +217,10 @@ import {
   formatSalaryNumber,
   roundFantasyPoints,
 } from "~/utils/helpers";
+
+const UButton = resolveComponent("UButton");
+const UDropdownMenu = resolveComponent("UDropdownMenu");
+const UIcon = resolveComponent("UIcon");
 
 const props = defineProps<{
   activeSlot: Slot;
@@ -363,13 +424,82 @@ const resetPage = () => {
 
 defineExpose({ resetPage });
 
+function getHeader(column: Column<Player>, label: string) {
+  const isSorted = column.getIsSorted();
+
+  return h(
+    UDropdownMenu,
+    {
+      content: {
+        align: "start" as const,
+      },
+      "aria-label": "Sort options",
+      items: [
+        {
+          label: "Asc",
+          type: "checkbox" as const,
+          icon: "i-lucide-arrow-up-narrow-wide",
+          checked: isSorted === "asc",
+          onSelect: () => {
+            if (isSorted === "asc") {
+              column.clearSorting();
+            } else {
+              column.toggleSorting(false);
+            }
+          },
+        },
+        {
+          label: "Desc",
+          icon: "i-lucide-arrow-down-wide-narrow",
+          type: "checkbox" as const,
+          checked: isSorted === "desc",
+          onSelect: () => {
+            if (isSorted === "desc") {
+              column.clearSorting();
+            } else {
+              column.toggleSorting(true);
+            }
+          },
+        },
+      ],
+    },
+    () =>
+      h(UButton, {
+        color: "gray" as const,
+        variant: "ghost" as const,
+        label,
+        icon: isSorted
+          ? isSorted === "asc"
+            ? "i-lucide-arrow-up-narrow-wide"
+            : "i-lucide-arrow-down-wide-narrow"
+          : "i-lucide-arrow-up-down",
+        class: "-mx-2.5 data-[state=open]:bg-elevated",
+        "aria-label": `Sort by ${
+          isSorted === "asc" ? "descending" : "ascending"
+        }`,
+      })
+  );
+}
+
 const columns: TableColumn<Player>[] = [
-  { accessorKey: "name", header: "Name", enableSorting: true },
-  { accessorKey: "team", header: "Team", enableSorting: true },
-  { accessorKey: "salary", header: "Salary", enableSorting: true },
+  {
+    accessorKey: "name",
+    header: ({ column }) => getHeader(column, "Name"),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "team",
+    header: ({ column }) => getHeader(column, "Team"),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "salary",
+    header: ({ column }) => getHeader(column, "Salary"),
+    enableSorting: true,
+  },
   {
     accessorKey: "fantasyPoints",
-    header: "Fantasy Points",
+    header: ({ column }) => getHeader(column, "Fantasy Points"),
     enableSorting: true,
   },
   { id: "action", header: "Action" },

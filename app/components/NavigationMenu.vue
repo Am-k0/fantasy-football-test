@@ -72,7 +72,9 @@ const handleAvatarClick = () => {
 
 <template>
   <div>
-    <UHeader>
+    <UHeader
+      class="fixed top-0 left-0 w-full z-50 backdrop-blur bg-background/60 border-b border-gray-200 dark:border-gray-800"
+    >
       <template #title>
         <div class="flex items-center space-x-2">
           <UIcon name="i-mdi-football" />
@@ -118,6 +120,8 @@ const handleAvatarClick = () => {
       </template>
     </UHeader>
 
-    <slot />
+    <div class="mt-16">
+      <slot />
+    </div>
   </div>
 </template>

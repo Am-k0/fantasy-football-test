@@ -1,56 +1,60 @@
 <template>
-  <div class="p-4 sm:p-8 space-y-6">
-    <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <UButton loading size="lg" color="primary" variant="ghost">
-        Loading matches...
-      </UButton>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error">
-      <UAlert
-        icon="i-heroicons-exclamation-triangle"
-        color="red"
-        variant="solid"
-        title="Error loading matches"
-        :description="error"
-      />
-    </div>
-
-    <!-- Content -->
-    <div v-else class="space-y-6">
-      <div class="flex items-center justify-center gap-3 mb-4">
-        <UIcon name="i-mdi-football" class="w-7 h-7" />
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-          Matches
-        </h1>
+  <UContainer class="py-10">
+    <div class="space-y-6">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <UButton loading size="lg" color="primary" variant="ghost">
+          Loading matches...
+        </UButton>
       </div>
 
-      <MatchFilters
-        :filters="filters"
-        :matches="matches"
-        :is-any-filter-active="isAnyFilterActive"
-        @update-filters="updateFilters"
-      />
-
-      <div v-if="filteredMatches.length > 0" class="mt-6">
-        <MatchList
-          :matches="filteredMatches"
-          :is-filtered="isAnyFilterActive"
-        />
-      </div>
-      <div v-else class="text-center py-12">
+      <!-- Error State -->
+      <div v-else-if="error">
         <UAlert
-          icon="i-heroicons-information-circle"
-          color="blue"
-          variant="soft"
-          title="No matches found"
-          description="No matches found for the selected filters."
+          icon="i-heroicons-exclamation-triangle"
+          color="red"
+          variant="solid"
+          title="Error loading matches"
+          :description="error"
         />
       </div>
+
+      <!-- Content -->
+      <div v-else class="space-y-6">
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-3 mb-2">
+            <UIcon name="i-mdi-football" class="w-10 h-10 text-primary-500" />
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+              Matches
+            </h1>
+          </div>
+        </div>
+
+        <MatchFilters
+          :filters="filters"
+          :matches="matches"
+          :is-any-filter-active="isAnyFilterActive"
+          @update-filters="updateFilters"
+        />
+
+        <div v-if="filteredMatches.length > 0" class="mt-6">
+          <MatchList
+            :matches="filteredMatches"
+            :is-filtered="isAnyFilterActive"
+          />
+        </div>
+        <div v-else class="text-center py-12">
+          <UAlert
+            icon="i-heroicons-information-circle"
+            color="blue"
+            variant="soft"
+            title="No matches found"
+            description="No matches found for the selected filters."
+          />
+        </div>
+      </div>
     </div>
-  </div>
+  </UContainer>
 </template>
 
 <script setup>

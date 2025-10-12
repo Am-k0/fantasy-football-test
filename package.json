@@ -10,8 +10,9 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@internationalized/date": "^3.10.0",
     "@nuxt/eslint": "^1.9.0",
-    "@nuxt/ui": "^4.0.0",
+    "@nuxt/ui": "^4.0.1",
     "@supabase/supabase-js": "^2.74.0",
     "eslint": "^9.36.0",
     "nuxt": "^4.1.2",

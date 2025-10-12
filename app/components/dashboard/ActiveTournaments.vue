@@ -14,23 +14,18 @@
       </template>
 
       <div class="space-y-4">
-        <div v-if="tournamentOptions.length > 0">
-          <div class="w-full md:w-1/3 lg:w-1/4">
-            <select
-              v-model="selectedTournamentId"
-              class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              @change="onTournamentChange"
-            >
-              <option :value="null">Select tournament...</option>
-              <option
-                v-for="option in tournamentOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+        <div
+          v-if="tournamentOptions.length > 0"
+          class="w-full md:w-1/3 lg:w-1/4"
+        >
+          <USelectMenu
+            v-model="selectedTournament"
+            :items="tournamentOptions"
+            placeholder="Select tournament..."
+            searchable
+            searchable-placeholder="Search tournaments..."
+            by="value"
+          />
         </div>
 
         <div v-else class="text-center text-gray-500 dark:text-gray-400 py-4">
@@ -38,45 +33,51 @@
         </div>
 
         <div
-          v-if="selectedTournamentDetails"
+          v-if="selectedTournament"
           class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
         >
-          <div class="grid grid-cols-3 gap-4 text-sm">
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm"
+          >
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Operator:
               </span>
-              {{ selectedTournamentDetails.operator }}
+              <span class="ml-2">{{ selectedTournament.operator }}</span>
             </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Game Type:
               </span>
-              {{ selectedTournamentDetails.operatorGameType }}
+              <span class="ml-2">{{
+                selectedTournament.operatorGameType
+              }}</span>
             </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Week:
               </span>
-              {{ selectedTournamentDetails.week }}
+              <span class="ml-2">{{ selectedTournament.week }}</span>
             </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Games:
               </span>
-              {{ selectedTournamentDetails.games }}
+              <span class="ml-2">{{ selectedTournament.games }}</span>
             </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Players:
               </span>
-              {{ selectedTournamentDetails.players }}
+              <span class="ml-2">{{ selectedTournament.players }}</span>
             </div>
             <div>
               <span class="font-medium text-gray-500 dark:text-gray-400">
                 Salary Cap:
               </span>
-              {{ formatSalary(selectedTournamentDetails.salaryCap) }}
+              <span class="ml-2">{{
+                formatSalary(selectedTournament.salaryCap)
+              }}</span>
             </div>
           </div>
         </div>
@@ -97,12 +98,13 @@ const props = defineProps({
 
 const emit = defineEmits(["tournament-selected"]);
 
-const selectedTournamentId = ref(null);
+const selectedTournament = ref(null);
 
 const tournamentOptions = computed(() => {
   if (!Array.isArray(props.data) || props.data.length === 0) {
     return [];
   }
+
   return props.data.map((tournament) => ({
     label: `Tournament ${tournament.slateId}`,
     value: tournament.slateId,
@@ -115,27 +117,24 @@ const tournamentOptions = computed(() => {
   }));
 });
 
-const selectedTournamentDetails = computed(() => {
-  return (
-    tournamentOptions.value.find(
-      (t) => t.value === selectedTournamentId.value
-    ) || null
-  );
+watch(selectedTournament, (newValue) => {
+  if (newValue) {
+    emit("tournament-selected", newValue.value);
+  } else {
+    emit("tournament-selected", null);
+  }
 });
-
-const onTournamentChange = () => {
-  emit("tournament-selected", selectedTournamentId.value);
-};
 
 watch(
   () => props.data,
   (newData) => {
-    const currentId = selectedTournamentId.value;
-    if (currentId && !newData.some((t) => t.slateId === currentId)) {
-      selectedTournamentId.value = null;
-      emit("tournament-selected", null);
+    if (selectedTournament.value) {
+      const currentId = selectedTournament.value.value;
+      if (!newData.some((t) => t.slateId === currentId)) {
+        selectedTournament.value = null;
+      }
     }
   },
-  { deep: true, immediate: true }
+  { deep: true }
 );
 </script>

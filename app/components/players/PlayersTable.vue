@@ -51,19 +51,16 @@
                     >
                       Team
                     </label>
-                    <select
-                      v-model="teamFilter"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select team...</option>
-                      <option
-                        v-for="team in uniqueTeams"
-                        :key="team"
-                        :value="team"
-                      >
-                        {{ team }}
-                      </option>
-                    </select>
+                    <USelectMenu
+                      v-model="selectedTeam"
+                      :items="teamOptionsFormatted"
+                      placeholder="Select team..."
+                      searchable
+                      searchable-placeholder="Search teams..."
+                      by="value"
+                      class="w-full"
+                      @update:model-value="handleTeamChange"
+                    />
                   </div>
 
                   <div>
@@ -72,19 +69,16 @@
                     >
                       Position
                     </label>
-                    <select
-                      v-model="positionFilter"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select position...</option>
-                      <option
-                        v-for="position in uniquePositions"
-                        :key="position"
-                        :value="position"
-                      >
-                        {{ position }}
-                      </option>
-                    </select>
+                    <USelectMenu
+                      v-model="selectedPosition"
+                      :items="positionOptionsFormatted"
+                      placeholder="Select position..."
+                      searchable
+                      searchable-placeholder="Search positions..."
+                      by="value"
+                      class="w-full"
+                      @update:model-value="handlePositionChange"
+                    />
                   </div>
 
                   <div>
@@ -247,6 +241,8 @@ const UIcon = resolveComponent("UIcon");
 const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
+type SelectOption = { label: string; value: string };
+
 interface TableRef {
   tableApi?: {
     getState: () => {
@@ -280,6 +276,9 @@ const filterDrawerOpen = ref<boolean>(false);
 const teamFilter = ref<string>("");
 const positionFilter = ref<string>("");
 const pointsFilter = ref<number>(0);
+
+const selectedTeam = ref<SelectOption | undefined>(undefined);
+const selectedPosition = ref<SelectOption | undefined>(undefined);
 
 const sorting = ref<SortingState>([
   {
@@ -340,7 +339,7 @@ function getHeader(column: Column<Player>, label: string) {
     },
     () =>
       h(UButton, {
-        color: "neutral" as const,
+        color: "gray" as const,
         variant: "ghost" as const,
         label,
         icon: isSorted
@@ -358,6 +357,28 @@ function getHeader(column: Column<Player>, label: string) {
 
 const uniqueTeams = computed(() => extractTeams(players.value));
 const uniquePositions = computed(() => extractPositions(players.value));
+
+const teamOptionsFormatted = computed(() =>
+  uniqueTeams.value.map((team) => ({
+    label: team,
+    value: team,
+  }))
+);
+
+const positionOptionsFormatted = computed(() =>
+  uniquePositions.value.map((position) => ({
+    label: position,
+    value: position,
+  }))
+);
+
+const handleTeamChange = (value: SelectOption | undefined): void => {
+  teamFilter.value = value?.value || "";
+};
+
+const handlePositionChange = (value: SelectOption | undefined): void => {
+  positionFilter.value = value?.value || "";
+};
 
 const hasActiveFilters = computed(() => {
   return (
@@ -397,10 +418,12 @@ const filteredCount = computed(() => searchAndFilteredPlayers.value.length);
 
 const clearTeamFilter = (): void => {
   teamFilter.value = "";
+  selectedTeam.value = undefined;
 };
 
 const clearPositionFilter = (): void => {
   positionFilter.value = "";
+  selectedPosition.value = undefined;
 };
 
 const clearPointsFilter = (): void => {
@@ -411,6 +434,8 @@ const clearAllFilters = (): void => {
   teamFilter.value = "";
   positionFilter.value = "";
   pointsFilter.value = 0;
+  selectedTeam.value = undefined;
+  selectedPosition.value = undefined;
   sorting.value = [
     {
       id: "fantasyPoints",
