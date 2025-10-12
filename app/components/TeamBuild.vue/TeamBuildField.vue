@@ -125,7 +125,7 @@
         class="absolute bottom-4 left-1/2 transform -translate-x-1/2 pointer-events-auto z-30 bg-red-100 border border-red-400 text-red-700 px-6 py-3 rounded-lg font-semibold shadow-xl"
       >
         <UIcon name="i-lucide-alert-circle" class="h-5 w-5 mr-2" />
-        Prešli ste budžet! Uklonite igrače.
+        You've exceeded the budget! Remove players.
       </div>
 
       <div
@@ -133,7 +133,7 @@
         class="absolute bottom-4 left-1/2 transform -translate-x-1/2 pointer-events-auto z-30 bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-lg font-semibold shadow-xl"
       >
         <UIcon name="i-lucide-check-circle" class="h-5 w-5 mr-2" />
-        Tim je uspješno sačuvan!
+        Team saved successfully!
       </div>
     </div>
 
@@ -158,7 +158,7 @@
           <template #leading>
             <UIcon name="i-lucide-trash-2" class="h-5 w-5" />
           </template>
-          Izbriši Tim
+          Delete Team
         </UButton>
       </div>
 
@@ -172,7 +172,7 @@
         <template #leading>
           <UIcon name="i-lucide-save" class="h-5 w-5" />
         </template>
-        {{ isEditing ? "Sačuvaj izmjene" : "Sačuvaj Tim" }}
+        {{ isEditing ? "Save Changes" : "Save Team" }}
       </UButton>
     </div>
   </div>

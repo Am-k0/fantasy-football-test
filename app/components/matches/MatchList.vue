@@ -13,10 +13,10 @@
         :key="tournament.slateId"
         class="space-y-6"
       >
-        <div class="flex items-center justify-between">
-          <h2
-            class="text-2xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 flex-1"
-          >
+        <div
+          class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2"
+        >
+          <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
             Tournament {{ tournament.slateId }}
           </h2>
           <div class="text-sm text-gray-500 dark:text-gray-400 ml-4">
@@ -81,42 +81,87 @@
           </UCard>
         </div>
 
+        <!-- Show More / Show All / Show Less za mečeve -->
         <div
           v-if="!props.isFiltered && tournament.totalMatches > 3"
           class="text-center"
         >
           <UButton
+            v-if="tournament.viewState === 'initial'"
             color="gray"
             variant="ghost"
-            @click="toggleTournament(tournament.slateId)"
+            @click="showMoreMatches(tournament.slateId)"
           >
-            <UIcon
-              name="i-heroicons-chevron-down"
-              class="w-4 h-4 mr-2 transition-transform"
-              :class="{ 'rotate-180': expandedTournaments[tournament.slateId] }"
-            />
-            {{
-              tournament.isExpanded
-                ? "Show less"
-                : `Show all ${tournament.totalMatches} matches`
-            }}
+            <UIcon name="i-heroicons-chevron-down" class="mr-2 h-4 w-4" />
+            Show More
+          </UButton>
+
+          <div
+            v-else-if="tournament.viewState === 'more'"
+            class="flex items-center justify-center gap-3"
+          >
+            <UButton
+              color="gray"
+              variant="ghost"
+              @click="showAllMatches(tournament.slateId)"
+            >
+              <UIcon
+                name="i-heroicons-chevron-double-down"
+                class="mr-2 h-4 w-4"
+              />
+              Show All
+            </UButton>
+            <UButton
+              color="gray"
+              variant="ghost"
+              @click="showLessMatches(tournament.slateId)"
+            >
+              <UIcon name="i-heroicons-chevron-up" class="mr-2 h-4 w-4" />
+              Show Less
+            </UButton>
+          </div>
+
+          <UButton
+            v-else-if="tournament.viewState === 'all'"
+            color="gray"
+            variant="ghost"
+            @click="showLessMatches(tournament.slateId)"
+          >
+            <UIcon name="i-heroicons-chevron-up" class="mr-2 h-4 w-4" />
+            Show Less
           </UButton>
         </div>
       </div>
 
+      <!-- Show More / Show Less dugme za turnire -->
       <div
-        v-if="!props.isFiltered && totalTournaments > 6"
+        v-if="
+          !props.isFiltered &&
+          (hasMoreTournaments || visibleTournamentsCount > TOURNAMENTS_PER_LOAD)
+        "
         class="text-center mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"
       >
-        <UButton
-          color="gray"
-          variant="ghost"
-          size="lg"
-          @click="showAllTournaments = !showAllTournaments"
-        >
-          <UIcon name="i-lucide-list" class="mr-1 h-4 w-4" />
-          View all tournaments
-        </UButton>
+        <div class="flex items-center justify-center gap-3">
+          <UButton
+            v-if="hasMoreTournaments"
+            color="gray"
+            variant="ghost"
+            @click="loadMoreTournaments"
+          >
+            <UIcon name="i-heroicons-chevron-down" class="mr-2 h-4 w-4" />
+            Show More Tournaments
+          </UButton>
+
+          <UButton
+            v-if="visibleTournamentsCount > TOURNAMENTS_PER_LOAD"
+            color="gray"
+            variant="ghost"
+            @click="showLessTournaments"
+          >
+            <UIcon name="i-heroicons-chevron-up" class="mr-2 h-4 w-4" />
+            Show Less
+          </UButton>
+        </div>
       </div>
     </div>
   </div>
@@ -144,8 +189,10 @@ const props = defineProps({
 
 const router = useRouter();
 
-const expandedTournaments = ref({});
-const showAllTournaments = ref(false);
+const TOURNAMENTS_PER_LOAD = 5;
+
+const visibleTournamentsCount = ref(TOURNAMENTS_PER_LOAD);
+const tournamentViewStates = ref({});
 
 const groupedMatches = computed(() => {
   return groupMatchesByTournament(props.matches);
@@ -155,36 +202,61 @@ const totalTournaments = computed(() => {
   return Object.keys(groupedMatches.value).length;
 });
 
+const hasMoreTournaments = computed(() => {
+  return visibleTournamentsCount.value < totalTournaments.value;
+});
+
 const displayedTournaments = computed(() => {
   const tournaments = Object.entries(groupedMatches.value);
 
-  const tournamentsToShow =
-    !props.isFiltered && !showAllTournaments.value
-      ? tournaments.slice(0, 6)
-      : tournaments;
+  const tournamentsToShow = props.isFiltered
+    ? tournaments
+    : tournaments.slice(0, visibleTournamentsCount.value);
 
-  const result = tournamentsToShow.map(([slateId, matches]) => {
-    const isExpanded = props.isFiltered || !!expandedTournaments.value[slateId];
+  return tournamentsToShow.map(([slateId, matches]) => {
+    const viewState = tournamentViewStates.value[slateId] || "initial";
 
-    const displayedMatches =
-      props.isFiltered || isExpanded ? matches : matches.slice(0, 3);
+    let displayedMatches;
+    if (props.isFiltered) {
+      displayedMatches = matches;
+    } else {
+      if (viewState === "initial") {
+        displayedMatches = matches.slice(0, 3);
+      } else if (viewState === "more") {
+        displayedMatches = matches.slice(0, 9);
+      } else {
+        displayedMatches = matches;
+      }
+    }
 
     return {
       slateId,
       matches,
       displayedMatches,
       totalMatches: matches.length,
-      isExpanded: isExpanded,
+      viewState,
     };
   });
-
-  return result;
 });
 
-const toggleTournament = (slateId) => {
-  if (!props.isFiltered) {
-    expandedTournaments.value[slateId] = !expandedTournaments.value[slateId];
-  }
+const loadMoreTournaments = () => {
+  visibleTournamentsCount.value += TOURNAMENTS_PER_LOAD;
+};
+
+const showLessTournaments = () => {
+  visibleTournamentsCount.value = TOURNAMENTS_PER_LOAD;
+};
+
+const showMoreMatches = (slateId) => {
+  tournamentViewStates.value[slateId] = "more";
+};
+
+const showAllMatches = (slateId) => {
+  tournamentViewStates.value[slateId] = "all";
+};
+
+const showLessMatches = (slateId) => {
+  tournamentViewStates.value[slateId] = "initial";
 };
 
 const selectGame = (game) => {
@@ -200,8 +272,8 @@ const selectGame = (game) => {
 watch(
   () => props.matches,
   () => {
-    expandedTournaments.value = {};
-    showAllTournaments.value = false;
+    tournamentViewStates.value = {};
+    visibleTournamentsCount.value = TOURNAMENTS_PER_LOAD;
   },
   { deep: true }
 );

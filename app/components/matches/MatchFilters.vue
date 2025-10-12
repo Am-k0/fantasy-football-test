@@ -10,6 +10,7 @@
 
     <div class="p-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Tournament Filter -->
         <div>
           <label
             for="tournament-filter"
@@ -17,30 +18,16 @@
           >
             Tournaments
           </label>
-          <select
-            id="tournament-filter"
-            v-model="localFilters.slateId"
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            @change="emitFilters"
-          >
-            <option
-              value=""
-              class="bg-white text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-            >
-              Select tournament
-            </option>
-
-            <option
-              v-for="slateId in tournamentOptions"
-              :key="slateId"
-              :value="slateId"
-              class="bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
-            >
-              Tournament {{ slateId }}
-            </option>
-          </select>
+          <USelectMenu
+            v-model="selectedTournament"
+            :items="tournamentOptionsFormatted"
+            placeholder="Select tournament"
+            by="value"
+            @update:model-value="handleTournamentChange"
+          />
         </div>
 
+        <!-- Team Filter -->
         <div>
           <label
             for="team-filter"
@@ -48,30 +35,17 @@
           >
             Team
           </label>
-          <select
-            id="team-filter"
-            v-model="localFilters.team"
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            @change="emitFilters"
-          >
-            <option
-              value=""
-              class="bg-white text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-            >
-              Select team
-            </option>
-
-            <option
-              v-for="team in teamOptions"
-              :key="team"
-              :value="team"
-              class="bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
-            >
-              {{ team }}
-            </option>
-          </select>
+          <USelectMenu
+            v-model="selectedTeam"
+            :items="teamOptionsFormatted"
+            placeholder="Select team"
+            searchable
+            by="value"
+            @update:model-value="handleTeamChange"
+          />
         </div>
 
+        <!-- Channel Filter -->
         <div>
           <label
             for="channel-filter"
@@ -79,30 +53,16 @@
           >
             TV Channel
           </label>
-          <select
-            id="channel-filter"
-            v-model="localFilters.channel"
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            @change="emitFilters"
-          >
-            <option
-              value=""
-              class="bg-white text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-            >
-              Select channel
-            </option>
-
-            <option
-              v-for="channel in channelOptions"
-              :key="channel"
-              :value="channel"
-              class="bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
-            >
-              {{ channel }}
-            </option>
-          </select>
+          <USelectMenu
+            v-model="selectedChannel"
+            :items="channelOptionsFormatted"
+            placeholder="Select channel"
+            by="value"
+            @update:model-value="handleChannelChange"
+          />
         </div>
 
+        <!-- Stadium Type Filter -->
         <div>
           <label
             for="stadium-filter"
@@ -110,30 +70,16 @@
           >
             Stadium Type
           </label>
-          <select
-            id="stadium-filter"
-            v-model="localFilters.stadiumType"
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            @change="emitFilters"
-          >
-            <option
-              value=""
-              class="bg-white text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-            >
-              Stadium type
-            </option>
-
-            <option
-              v-for="stadiumType in stadiumTypeOptions"
-              :key="stadiumType"
-              :value="stadiumType"
-              class="bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
-            >
-              {{ stadiumType }}
-            </option>
-          </select>
+          <USelectMenu
+            v-model="selectedStadiumType"
+            :items="stadiumTypeOptionsFormatted"
+            placeholder="Stadium type"
+            by="value"
+            @update:model-value="handleStadiumTypeChange"
+          />
         </div>
 
+        <!-- Date Filter -->
         <div>
           <label
             for="date-filter"
@@ -141,14 +87,29 @@
           >
             Date
           </label>
-          <input
-            id="date-filter"
-            v-model="localFilters.date"
-            type="date"
-            placeholder="Select date"
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            @input="emitFilters"
-          />
+
+          <UPopover>
+            <UButton
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-calendar"
+              class="w-auto min-w-[150px] justify-between text-left border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 h-[38px]"
+            >
+              <span class="truncate">
+                {{
+                  modelDate
+                    ? df.format(modelDate.toDate(getLocalTimeZone()))
+                    : "Select a date"
+                }}
+              </span>
+            </UButton>
+
+            <template #content>
+              <div class="p-2">
+                <UCalendar v-model="modelDate" />
+              </div>
+            </template>
+          </UPopover>
         </div>
       </div>
     </div>
@@ -156,33 +117,29 @@
     <div
       class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end"
     >
-      <button
+      <UButton
         v-if="isAnyFilterActive"
-        type="button"
-        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:border-gray-600 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+        color="neutral"
+        variant="outline"
         @click="clearFilters"
       >
-        <svg
-          class="w-4 h-4 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-
+        <template #leading>
+          <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+        </template>
         Clear filters
-      </button>
+      </UButton>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, computed, watch, shallowRef } from "vue";
+import type { DateValue } from "@internationalized/date";
+import {
+  CalendarDate,
+  DateFormatter,
+  getLocalTimeZone,
+} from "@internationalized/date";
 import {
   extractTournamentIds,
   extractTeams,
@@ -190,47 +147,126 @@ import {
   extractStadiumTypes,
 } from "~/utils/helpers";
 
-const props = defineProps({
-  filters: {
-    type: Object,
-    default: () => ({
-      date: "",
-      team: "",
-      channel: "",
-      stadiumType: "",
-      slateId: "",
-    }),
-  },
+type SelectOption = { label: string; value: string };
 
-  matches: {
-    type: Array,
-    required: false,
-    default: () => [],
-  },
+interface FiltersType {
+  date: string;
+  team: string;
+  channel: string;
+  stadiumType: string;
+  slateId: string;
+}
 
-  isAnyFilterActive: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = defineProps<{
+  filters: FiltersType;
+  matches?: unknown[];
+  isAnyFilterActive: boolean;
+}>();
 
-const emit = defineEmits(["update-filters"]);
+const emit = defineEmits<{
+  "update-filters": [filters: FiltersType];
+}>();
 
-const localFilters = ref({
+const localFilters = ref<FiltersType>({
   ...props.filters,
   slateId: props.filters.slateId || "",
 });
 
-const tournamentOptions = computed(() => extractTournamentIds(props.matches));
-const teamOptions = computed(() => extractTeams(props.matches));
-const channelOptions = computed(() => extractChannels(props.matches));
-const stadiumTypeOptions = computed(() => extractStadiumTypes(props.matches));
+const selectedTournament = ref<SelectOption | undefined>(undefined);
+const selectedTeam = ref<SelectOption | undefined>(undefined);
+const selectedChannel = ref<SelectOption | undefined>(undefined);
+const selectedStadiumType = ref<SelectOption | undefined>(undefined);
 
-const emitFilters = () => {
+/* --- Date handling using UCalendar --- */
+const df = new DateFormatter("en-US", { dateStyle: "medium" });
+const modelDate = shallowRef<DateValue | undefined>(
+  props.filters.date
+    ? new CalendarDate(
+        new Date(props.filters.date).getFullYear(),
+        new Date(props.filters.date).getMonth() + 1,
+        new Date(props.filters.date).getDate()
+      )
+    : undefined
+);
+
+// Watch modelDate changes
+watch(modelDate, (date) => {
+  if (date && "year" in date && "month" in date && "day" in date) {
+    const year = date.year;
+    const month = String(date.month).padStart(2, "0");
+    const day = String(date.day).padStart(2, "0");
+    localFilters.value.date = `${year}-${month}-${day}`;
+    emitFilters();
+  } else if (!date) {
+    localFilters.value.date = "";
+    emitFilters();
+  }
+});
+
+/* --- Filter data --- */
+const tournamentOptions = computed(() =>
+  extractTournamentIds(props.matches || [])
+);
+const teamOptions = computed(() => extractTeams(props.matches || []));
+const channelOptions = computed(() => extractChannels(props.matches || []));
+const stadiumTypeOptions = computed(() =>
+  extractStadiumTypes(props.matches || [])
+);
+
+const tournamentOptionsFormatted = computed(() =>
+  tournamentOptions.value.map((slateId) => ({
+    label: `Tournament ${slateId}`,
+    value: slateId,
+  }))
+);
+
+const teamOptionsFormatted = computed(() =>
+  teamOptions.value.map((team) => ({
+    label: team,
+    value: team,
+  }))
+);
+
+const channelOptionsFormatted = computed(() =>
+  channelOptions.value.map((channel) => ({
+    label: channel,
+    value: channel,
+  }))
+);
+
+const stadiumTypeOptionsFormatted = computed(() =>
+  stadiumTypeOptions.value.map((type) => ({
+    label: type,
+    value: type,
+  }))
+);
+
+/* --- Event handlers --- */
+const handleTournamentChange = (value: SelectOption | undefined): void => {
+  localFilters.value.slateId = value?.value || "";
+  emitFilters();
+};
+
+const handleTeamChange = (value: SelectOption | undefined): void => {
+  localFilters.value.team = value?.value || "";
+  emitFilters();
+};
+
+const handleChannelChange = (value: SelectOption | undefined): void => {
+  localFilters.value.channel = value?.value || "";
+  emitFilters();
+};
+
+const handleStadiumTypeChange = (value: SelectOption | undefined): void => {
+  localFilters.value.stadiumType = value?.value || "";
+  emitFilters();
+};
+
+const emitFilters = (): void => {
   emit("update-filters", { ...localFilters.value });
 };
 
-const clearFilters = () => {
+const clearFilters = (): void => {
   localFilters.value = {
     date: "",
     team: "",
@@ -238,6 +274,11 @@ const clearFilters = () => {
     stadiumType: "",
     slateId: "",
   };
+  selectedTournament.value = undefined;
+  selectedTeam.value = undefined;
+  selectedChannel.value = undefined;
+  selectedStadiumType.value = undefined;
+  modelDate.value = undefined;
   emitFilters();
 };
 

@@ -17,7 +17,14 @@ export default defineNuxtConfig({
     }
   },
 
-  // 1. ADDING THE 'app' BLOCK FOR GLOBAL HEAD CONFIGURATION
+  // Vue compiler options to suppress aria-hidden warnings
+  vue: {
+    compilerOptions: {
+      isCustomElement: (_tag) => false,
+    },
+  },
+
+  // Global head configuration
   app: {
     head: {
       // Set the default title for the entire application

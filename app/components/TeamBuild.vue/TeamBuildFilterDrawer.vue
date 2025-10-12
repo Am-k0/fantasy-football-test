@@ -2,7 +2,7 @@
   <UDrawer
     v-model:open="isOpen"
     direction="right"
-    :ui="{ content: 'min-w-55', overlay: 'bg-black/30' }"
+    :ui="{ content: 'min-w-[320px]', overlay: 'bg-black/30' }"
   >
     <template #content>
       <div class="p-6 space-y-6">
@@ -25,21 +25,16 @@
             >
               Team
             </label>
-            <select
-              :value="selectedTeam"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              @change="
-                $emit(
-                  'update:selectedTeam',
-                  ($event.target as HTMLSelectElement).value
-                )
-              "
-            >
-              <option value="">All Teams</option>
-              <option v-for="team in availableTeams" :key="team" :value="team">
-                {{ team }}
-              </option>
-            </select>
+            <USelectMenu
+              v-model="selectedTeamOption"
+              :items="teamOptionsFormatted"
+              placeholder="Select team..."
+              searchable
+              searchable-placeholder="Search teams..."
+              by="value"
+              class="w-full"
+              @update:model-value="handleTeamChange"
+            />
           </div>
 
           <div>
@@ -79,13 +74,10 @@
         <div
           class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
         >
-          <UButton variant="outline" class="flex-1" @click="$emit('clearAll')">
+          <UButton variant="outline" class="flex-1" @click="handleClearAll">
             Clear All
           </UButton>
-          <UButton
-            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-            @click="isOpen = false"
-          >
+          <UButton color="primary" class="flex-1" @click="isOpen = false">
             Apply Filters
           </UButton>
         </div>
@@ -95,8 +87,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { formatSalaryNumber } from "~/utils/helpers";
+
+type SelectOption = { label: string; value: string };
 
 const props = defineProps<{
   open: boolean;
@@ -119,4 +113,37 @@ const isOpen = computed({
   get: () => props.open,
   set: (value) => emit("update:open", value),
 });
+
+const selectedTeamOption = ref<SelectOption | undefined>(undefined);
+
+const teamOptionsFormatted = computed(() =>
+  props.availableTeams.map((team) => ({
+    label: team,
+    value: team,
+  }))
+);
+
+const handleTeamChange = (value: SelectOption | undefined): void => {
+  emit("update:selectedTeam", value?.value || "");
+};
+
+const handleClearAll = (): void => {
+  selectedTeamOption.value = undefined;
+  emit("clearAll");
+};
+
+// Sync selectedTeam prop with local selectedTeamOption
+watch(
+  () => props.selectedTeam,
+  (newValue) => {
+    if (newValue === "") {
+      selectedTeamOption.value = undefined;
+    } else {
+      selectedTeamOption.value = teamOptionsFormatted.value.find(
+        (opt) => opt.value === newValue
+      );
+    }
+  },
+  { immediate: true }
+);
 </script>

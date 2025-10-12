@@ -3,7 +3,7 @@
     <div class="text-center mb-6">
       <div class="flex items-center justify-center gap-2">
         <UIcon name="i-mdi-football" class="text-3xl text-primary-500" />
-        <h1 class="text-2xl font-bold">Football Fantasy — Create Your Team</h1>
+        <h1 class="text-3xl font-bold">Football Fantasy — Create Your Team</h1>
       </div>
 
       <p class="text-xs text-gray-600 mt-2">
@@ -11,7 +11,7 @@
       </p>
     </div>
 
-    <!-- Poruka ako korisnik nije ulogovan -->
+    <!-- Message if user is not logged in -->
     <div v-if="!user" class="max-w-2xl mx-auto">
       <UCard>
         <div class="text-center py-12">
@@ -55,7 +55,7 @@
       </UCard>
     </div>
 
-    <!-- Team builder - prikazuje se samo ako je korisnik ulogovan -->
+    <!-- Team builder - shows only if user is logged in -->
     <div v-else>
       <!-- Loading State -->
       <div v-if="loadingTeam" class="flex justify-center items-center h-64">
@@ -96,14 +96,14 @@
 
       <UModal
         v-model:open="deleteModalOpen"
-        title="Potvrda brisanja"
-        description="Da li ste sigurni da želite da obrišete ceo tim?"
+        title="Delete Confirmation"
+        description="Are you sure you want to delete your entire team?"
         :ui="{ footer: 'justify-end' }"
       >
         <template #footer="{ close }">
-          <UButton label="Otkaži" variant="outline" @click="close" />
+          <UButton label="Cancel" variant="outline" @click="close" />
           <UButton
-            label="Obriši"
+            label="Delete"
             class="bg-red-600 hover:bg-red-700 text-white"
             @click="confirmDeleteTeam(close)"
           />
