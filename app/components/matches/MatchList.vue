@@ -46,7 +46,7 @@
             <div class="space-y-4">
               <div class="text-center">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ game.awayTeam || "TBA" }} @ {{ game.homeTeam || "TBA" }}
+                  {{ game.awayTeam || "TBA" }} vs {{ game.homeTeam || "TBA" }}
                 </h3>
               </div>
               <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">

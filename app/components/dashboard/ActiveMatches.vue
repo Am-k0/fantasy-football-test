@@ -33,7 +33,7 @@
           <div class="space-y-4">
             <div class="text-center">
               <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                {{ game.awayTeam }} @ {{ game.homeTeam }}
+                {{ game.awayTeam }} vs {{ game.homeTeam }}
               </h3>
             </div>
             <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
